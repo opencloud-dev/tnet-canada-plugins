@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @PluginImplementation
-public class MetadataCatalog extends BasePlugin implements Action {
-	private static Logger log = LoggerFactory.getLogger(MetadataCatalog.class);
+public class TNet_DiscardMetadata extends BasePlugin implements Action {
+	private static Logger log = LoggerFactory.getLogger(TNet_DiscardMetadata.class);
 	private static final String TEST_PROPERTY_GROUP_NAME = "okg:test";
 	private static final String TEST_PROPERTY_PARENT_NAME = "okp:test.parent";
 	private static final String TEST_PROPERTY_CHILDREN_NAME = "okp:test.children";
