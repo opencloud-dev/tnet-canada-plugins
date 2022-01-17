@@ -80,7 +80,6 @@ public class TNet_DiscardMetadata extends BasePlugin implements Action {
 			NodeBase nodeBase = this.automationUtils.getNodeBase(env);
 			uuid = this.automationUtils.getNodeToEvaluate(env).getUuid();
 			isLogInfo = Boolean.valueOf(this.configSrv.getString(TNet_Util.TNET_CONFIG_LOG_INFO, "tnet.cfg_log_info"));
-			//FileLogger.info(BASE_NAME, token+"Init Discard Metadata ["+uuid+"]: " + nodeBase.getPath(), new Object[0]);
 			if(isLogInfo)TNet_Util.infoLogger(BASE_NAME, token, "Init Discard Metadata ["+uuid+"]: " + nodeBase.getPath());
 			
 			// filters to remove properties groups
