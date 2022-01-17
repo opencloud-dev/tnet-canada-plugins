@@ -5,11 +5,6 @@
  * @param okg:group1|okg:groupN - Properties apply the remove
  * @return(void)
  * @see  <a href = "https://docs.openkm.com/kcenter/view/okm-7.1/" /> OpenKM – KCenter </a>
- * @Description
- * - Remove properties groups 
- * @Prerequisites
- * 1.- Create openkm-config (tnet.cfg_log_info)
- *  
  */
 
 package com.openkm.plugin.automation.action;
@@ -19,16 +14,14 @@ import com.openkm.db.bean.Automation;
 import com.openkm.db.bean.AutomationRule.EnumEvents;
 import com.openkm.db.bean.NodeBase;
 import com.openkm.db.bean.NodeDocument;
-import com.openkm.db.service.ConfigSrv;
 import com.openkm.module.db.stuff.DbSessionManager;
 import com.openkm.plugin.BasePlugin;
 import com.openkm.plugin.automation.Action;
 import com.openkm.plugin.automation.AutomationUtils;
 import net.xeoh.plugins.base.annotations.PluginImplementation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-//import com.openkm.util.FileLogger;
-import com.openkm.util.TNet_Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,24 +30,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @PluginImplementation
-public class TNet_DiscardMetadata extends BasePlugin implements Action {
-	public static final String BASE_NAME = TNet_DiscardMetadata.class.getSimpleName();
+public class TNet_SplitPDF extends BasePlugin implements Action {
+	private static Logger log = LoggerFactory.getLogger(TNet_SplitPDF.class);
 	private static ArrayList<EnumEvents> EVENTS_AT_PRE = new ArrayList<>();
 
 	private static ArrayList<EnumEvents> EVENTS_AT_POST =
 		Stream.of(EnumEvents.EVENT_PROPERTY_GROUP_ADD, EnumEvents.EVENT_PROPERTY_GROUP_SET)
 			.collect(Collectors.toCollection(ArrayList::new));
-	
-	private static String token;
-	private static String uuid;
-	private static boolean isLogInfo;
-	private static String FILTER_PROPERTY_GROUP;
-	private static String DISCARD_PROPERTY_GROUP;
-	private static String automation_propGrpName;
-	
-	
-	@Autowired
-	  private ConfigSrv configSrv;
+
 	@Autowired
 	private AutomationUtils automationUtils;
 
@@ -66,50 +49,43 @@ public class TNet_DiscardMetadata extends BasePlugin implements Action {
 		// Nothing to do here
 	}
 
-	/**
-	 * 
-     * Method to remove properties group according to input parms
-     * @param executePost(Map<String, Object> env, Object... params)
-     * 
-     */
 	@Override
 	public void executePost(Map<String, Object> env, Object... params) {
+		log.info("Init Discard Metadata");
 
 		try {
-			token = DbSessionManager.getInstance().getSystemToken();
 			NodeBase nodeBase = this.automationUtils.getNodeBase(env);
-			uuid = this.automationUtils.getNodeToEvaluate(env).getUuid();
-			isLogInfo = Boolean.valueOf(this.configSrv.getString(TNet_Util.TNET_CONFIG_LOG_INFO, "tnet.cfg_log_info"));
-			//FileLogger.info(BASE_NAME, token+"Init Discard Metadata ["+uuid+"]: " + nodeBase.getPath(), new Object[0]);
-			if(isLogInfo)TNet_Util.infoLogger(BASE_NAME, token, "Init Discard Metadata ["+uuid+"]: " + nodeBase.getPath());
+			String token = DbSessionManager.getInstance().getSystemToken();
+			String uuid = this.automationUtils.getNodeToEvaluate(env).getUuid();
 			
-			// filters to remove properties groups
+			//Extract input params
+			String FILTER_PROPERTY_GROUP = this.automationUtils.getString(0, params); 
+			String DISCARD_PROPERTY_GROUP = this.automationUtils.getString(1, params);
+			String automation_propGrpName = this.automationUtils.getPropertyGroupName(env);
+			
+			log.error("OC: FILTER_PROPERTY_GROUP {"+FILTER_PROPERTY_GROUP+"} DISCARD_PROPERTY_GROUP {"+DISCARD_PROPERTY_GROUP+"} automationUtils.getPropertyGroupName(env) {"+automation_propGrpName+"}");
+			
 			if (nodeBase instanceof NodeDocument) {
-				//Extract input params
-				FILTER_PROPERTY_GROUP = this.automationUtils.getString(0, params); 
-				DISCARD_PROPERTY_GROUP = this.automationUtils.getString(1, params);
-				automation_propGrpName = this.automationUtils.getPropertyGroupName(env);
-				if(isLogInfo)TNet_Util.infoLogger(BASE_NAME, token, "ACTUAL_PROPERTY_GOUP ["+automation_propGrpName+"] FILTER_PROPERTY_GROUP ["+FILTER_PROPERTY_GROUP+"] DISCARD_PROPERTY_GROUP ["+DISCARD_PROPERTY_GROUP+"] ");
-
-				if (FILTER_PROPERTY_GROUP.equalsIgnoreCase(automation_propGrpName)) {
+				
+				if (FILTER_PROPERTY_GROUP.equals(automation_propGrpName)) {
 					
 					String[] arrOfStr = DISCARD_PROPERTY_GROUP.split("\\|");
 					for (String PROPERTY_GET : arrOfStr){
 						if( this.okmPropertyGroup.hasGroup(token, uuid, PROPERTY_GET)){
 							//Remove Property group
-							try{ this.okmPropertyGroup.removeGroup(token, uuid, PROPERTY_GET.toLowerCase());
-							if(isLogInfo)TNet_Util.infoLogger(BASE_NAME, token, "DICARD_GROUP_NAME Completed["+PROPERTY_GET+"]");
+							try{ this.okmPropertyGroup.removeGroup(token, uuid, PROPERTY_GET);
+							log.error("OC: DICARD_GROUP_NAME {"+PROPERTY_GET+"}");
 							} catch (Exception e) {
-								TNet_Util.errorLogger(BASE_NAME, token, e.getMessage());
+								log.error("OC: ERROR DICARD_GROUP_NAME {"+PROPERTY_GET+"}");
 							}	
 						}
 					}	
 				}
 			}
 		} catch (Exception e) {
-			TNet_Util.errorLogger(BASE_NAME, token, e.getMessage());
+			log.error(e.getMessage(), e);
 		}
-	} // End Method
+	}
 
 	@Override
 	public String getName() {
@@ -128,7 +104,7 @@ public class TNet_DiscardMetadata extends BasePlugin implements Action {
 
 	@Override
 	public String getParamDesc00() {
-		return "FILTER_PROPERTY_GROUP okg:group";
+		return "FILTER PROPERTY_GROUP okg:group";
 	}
 
 	@Override
@@ -143,7 +119,7 @@ public class TNet_DiscardMetadata extends BasePlugin implements Action {
 
 	@Override
 	public String getParamDesc01() {
-		return "DISCARD_PROPERTIES_GROUPS okg:group1|okg:groupN";
+		return "DISCARD PROPERTY_GROUP okg:group1|okg:groupN";
 	}
 
 	@Override
